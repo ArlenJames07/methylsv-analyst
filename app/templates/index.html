@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MethylSV Analyst</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark">MS</span>
+                <span>MethylSV Analyst</span>
+            </a>
+
+            <span class="version">MVP 0.2.0</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <p class="eyebrow">Genomic analysis platform</p>
+
+            <h1>Select an analysis workflow</h1>
+
+            <p class="intro-text">
+                Choose the workflow that corresponds to your available
+                methylation data. Each workflow validates its inputs before
+                starting an analysis.
+            </p>
+        </section>
+
+        <section class="workflow-grid">
+            {% for workflow in workflows %}
+            <article class="workflow-card">
+                <div class="card-heading">
+                    <span class="module-number">{{ workflow.number }}</span>
+                    <span class="status">MVP</span>
+                </div>
+
+                <p class="workflow-subtitle">{{ workflow.subtitle }}</p>
+                <h2>{{ workflow.title }}</h2>
+                <p>{{ workflow.description }}</p>
+
+                <h3>Required inputs</h3>
+
+                <ul>
+                    {% for item in workflow.inputs %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+
+                <a
+                    class="primary-button"
+                    href="{{ url_for(
+                        'workflow_page',
+                        workflow_id=workflow.id
+                    ) }}"
+                >
+                    Open workflow
+                </a>
+            </article>
+            {% endfor %}
+        </section>
+
+        <aside class="scientific-rule">
+            <strong>Reference integrity:</strong>
+            all files in one analysis must use the same reference genome.
+            GRCh38 and T2T-CHM13 coordinates will never be mixed.
+        </aside>
+    </main>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Upload modBAM | MethylSV Analyst</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark">MS</span>
+                <span>MethylSV Analyst</span>
+            </a>
+
+            <span class="version">MVP 0.2.0</span>
+        </div>
+    </header>
+
+    <main class="container workflow-page">
+        <a
+            class="back-link"
+            href="{{ url_for('workflow_page', workflow_id='modbam') }}"
+        >
+            ← Methylation visualization
+        </a>
+
+        <p class="eyebrow">Step 1 of 4 · Input data</p>
+        <h1>Upload one modBAM sample</h1>
+
+        <p class="intro-text">
+            Select one coordinate-sorted BAM, its matching BAI index
+            and the reference genome used during alignment.
+        </p>
+
+        <form
+            class="upload-panel"
+            action="{{ url_for('validate_modbam_upload') }}"
+            method="post"
+            enctype="multipart/form-data"
+        >
+            <div class="form-field">
+                <label for="reference">Reference genome</label>
+
+                <select id="reference" name="reference" required>
+                    <option value="">Select a reference</option>
+
+                    {% for value, label in reference_options.items() %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="bam_files">modBAM file</label>
+
+                <input
+                    id="bam_files"
+                    name="bam_files"
+                    type="file"
+                    accept=".bam"
+                    required
+                >
+
+                <small>Exactly one `.bam` file containing MM and ML tags.</small>
+            </div>
+
+            <div class="form-field">
+                <label for="bai_files">BAM index</label>
+
+                <input
+                    id="bai_files"
+                    name="bai_files"
+                    type="file"
+                    accept=".bai"
+                    required
+                >
+
+                <small>The index must correspond to the uploaded BAM.</small>
+            </div>
+
+            <button class="primary-button" type="submit">
+                Validate upload
+            </button>
+        </form>
+
+        <aside class="scientific-rule">
+            Use only a small, synthetic or desidentified BAM during development.
+            Large-file limits and persistent storage have not been configured yet.
+        </aside>
+    </main>
+</body>
+</html>

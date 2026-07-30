@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>modBAM validation | MethylSV Analyst</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark">MS</span>
+                <span>MethylSV Analyst</span>
+            </a>
+
+            <span class="version">MVP 0.2.0</span>
+        </div>
+    </header>
+
+    <main class="container workflow-page">
+        <a class="back-link" href="{{ url_for('modbam_upload_form') }}">
+            ← Upload another sample
+        </a>
+
+        {% if accepted %}
+        <section class="validation-box validation-success">
+            <h1>modBAM accepted</h1>
+
+            <p>
+                The uploaded BAM, index, reference fingerprint and
+                modified-base annotations passed validation.
+            </p>
+        </section>
+        {% else %}
+        <section class="validation-box validation-error">
+            <h1>modBAM rejected</h1>
+
+            <ul>
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {% if checks %}
+        <section class="detail-panel result-details">
+            <h2>Validation checks</h2>
+
+            <ul class="check-list">
+                {% for check in checks %}
+                <li>
+                    <strong>{{ check.name }}</strong>
+                    <span>{{ check.detail }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {% if warnings %}
+        <section class="validation-box validation-warning">
+            <h2>Warnings</h2>
+
+            <ul>
+                {% for warning in warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        <section class="detail-panel result-details">
+            <h2>Upload summary</h2>
+
+            <p>
+                <strong>Selected reference:</strong>
+                {{ reference }}
+            </p>
+
+            {% for file in files %}
+            <p>
+                <strong>{{ file.name }}</strong><br>
+                {{ file.size }}
+            </p>
+            {% endfor %}
+        </section>
+
+        <aside class="scientific-rule">
+            Uploaded files were copied to an isolated temporary directory
+            for validation and deleted immediately afterward. No analysis
+            output has been generated or stored.
+        </aside>
+    </main>
+</body>
+</html>

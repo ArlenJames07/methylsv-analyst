@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ workflow.title }} | MethylSV Analyst</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark">MS</span>
+                <span>MethylSV Analyst</span>
+            </a>
+
+            <span class="version">MVP 0.2.0</span>
+        </div>
+    </header>
+
+    <main class="container workflow-page">
+        <a class="back-link" href="{{ url_for('home') }}">
+            ← Analysis workflows
+        </a>
+
+        <p class="eyebrow">Workflow {{ workflow.number }}</p>
+        <h1>{{ workflow.title }}</h1>
+        <p class="intro-text">{{ workflow.description }}</p>
+
+        <div class="workflow-details">
+            <section class="detail-panel">
+                <h2>Input requirements</h2>
+
+                <ul>
+                    {% for item in workflow.inputs %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="detail-panel">
+                <h2>Analysis sequence</h2>
+
+                <ol>
+                    {% for step in workflow.steps %}
+                    <li>{{ step }}</li>
+                    {% endfor %}
+                </ol>
+            </section>
+        </div>
+        {% if workflow.id == "modbam" %}
+        <a class="primary-button" href="{{ url_for('modbam_upload_form') }}">
+            Continue to file upload
+        </a>
+        {% endif %}
+        <aside class="scientific-rule">
+            The upload and validation form will be implemented in the next
+            checkpoint. No genomic data are being transferred yet.
+        </aside>
+    </main>
+</body>
+</html>
