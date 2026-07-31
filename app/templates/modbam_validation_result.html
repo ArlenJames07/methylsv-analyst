@@ -91,12 +91,42 @@
                 {{ file.size }}
             </p>
             {% endfor %}
+
+            {% if accepted and job_id %}
+            <div class="job-information">
+                <p>
+                    <strong>Temporary analysis ID:</strong><br>
+                    <code class="job-id">{{ job_id }}</code>
+                </p>
+
+                <p>
+                    The validated files will be available for approximately
+                    {{ job_ttl_minutes }} minutes.
+                </p>
+            </div>
+
+            <a
+                class="primary-action"
+                href="{{ url_for(
+                    'modbam_region_form',
+                    job_id=job_id
+                ) }}"
+            >
+                Continue to region selection →
+            </a>
+            {% endif %}
         </section>
 
         <aside class="scientific-rule">
-            Uploaded files were copied to an isolated temporary directory
-            for validation and deleted immediately afterward. No analysis
-            output has been generated or stored.
+            {% if accepted and job_id %}
+            The validated files are temporarily retained under an isolated
+            analysis identifier. They become eligible for automatic cleanup
+            after {{ job_ttl_minutes }} minutes. Use only synthetic or properly
+            deidentified data during development.
+            {% else %}
+            The rejected upload was closed and no temporary analysis job
+            was retained.
+            {% endif %}
         </aside>
     </main>
 </body>
