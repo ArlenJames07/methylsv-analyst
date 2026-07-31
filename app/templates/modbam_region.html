@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Region selection | MethylSV Analyst</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark">MS</span>
+                <span>MethylSV Analyst</span>
+            </a>
+
+            <span class="version">MVP 0.2.0</span>
+        </div>
+    </header>
+
+    <main class="container workflow-page">
+        <a class="back-link" href="{{ url_for('modbam_upload_form') }}">
+            ← Upload another sample
+        </a>
+
+        {% if not job_available %}
+        <section class="validation-box validation-error">
+            <h1>Analysis job unavailable</h1>
+
+            <p>
+                This temporary analysis does not exist, has expired,
+                or no longer contains its validated BAM and BAI files.
+            </p>
+
+            <a class="primary-action"
+               href="{{ url_for('modbam_upload_form') }}">
+                Upload the files again
+            </a>
+        </section>
+        {% else %}
+        <section class="detail-panel">
+            <h1>Select a genomic region</h1>
+
+            <p>
+                <strong>Reference:</strong>
+                {{ metadata.reference_label or metadata.reference }}
+            </p>
+
+            <form
+                class="region-form"
+                method="post"
+                action="{{ url_for(
+                    'analyze_modbam_region',
+                    job_id=job_id
+                ) }}"
+            >
+                <label>
+                    Chromosome or contig
+
+                    <select name="contig" required>
+                        {% for item in contigs %}
+                        <option
+                            value="{{ item.name }}"
+                            {% if item.name == selected_contig %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ item.name }}
+                            ({{ "{:,}".format(item.length) }} bp)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    Start
+                    <input
+                        type="number"
+                        name="start_1"
+                        min="1"
+                        step="1"
+                        value="{{ start_value }}"
+                        required
+                    >
+                </label>
+
+                <label>
+                    End
+                    <input
+                        type="number"
+                        name="end_1"
+                        min="1"
+                        step="1"
+                        value="{{ end_value }}"
+                        required
+                    >
+                </label>
+
+                <button type="submit">
+                    Retrieve overlapping reads
+                </button>
+            </form>
+
+            <p class="coordinate-note">
+                Coordinates are interpreted as 1-based and inclusive.
+                The maximum interval is 1,000,000 bp.
+            </p>
+        </section>
+
+        {% if errors %}
+        <section class="validation-box validation-error">
+            <h2>Region not accepted</h2>
+
+            <ul>
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {% if result %}
+        <section class="detail-panel">
+            <h2>{{ result.region_label }}</h2>
+
+            <div class="region-summary">
+                <div>
+                    <span>Region length</span>
+                    <strong>
+                        {{ "{:,}".format(result.region_length_bp) }} bp
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Overlapping reads</span>
+                    <strong>{{ result.read_count }}</strong>
+                </div>
+
+                <div>
+                    <span>Reads with modifications</span>
+                    <strong>{{ result.reads_with_modifications }}</strong>
+                </div>
+
+                <div>
+                    <span>Modified-base calls</span>
+                    <strong>
+                        {{ result.modified_calls_in_overlapping_reads }}
+                    </strong>
+                </div>
+            </div>
+
+            {% if result.truncated %}
+            <div class="validation-box validation-warning">
+                Results reached the limit of
+                {{ "{:,}".format(result.read_limit) }} reads.
+                Counts therefore represent a partial result.
+            </div>
+            {% endif %}
+
+            {% if result.modification_decode_errors %}
+            <div class="validation-box validation-warning">
+                Modified-base annotations could not be decoded in
+                {{ result.modification_decode_errors }} read(s).
+            </div>
+            {% endif %}
+
+            {% if result.reads %}
+                {% if result.read_count > table_limit %}
+                <p>
+                    The table displays the first {{ table_limit }} reads.
+                </p>
+                {% endif %}
+
+                <div class="table-scroll">
+                    <table class="region-table">
+                        <thead>
+                            <tr>
+                                <th>Read</th>
+                                <th>Alignment</th>
+                                <th>Strand</th>
+                                <th>MAPQ</th>
+                                <th>Overlap</th>
+                                <th>MM/ML</th>
+                                <th>Modified calls</th>
+                                <th>HP</th>
+                                <th>PS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for read in result.reads[:table_limit] %}
+                            <tr>
+                                <td><code>{{ read.name }}</code></td>
+                                <td>
+                                    {{ read.start_1 }}–{{ read.end_1 }}
+                                </td>
+                                <td>{{ read.strand }}</td>
+                                <td>{{ read.mapping_quality }}</td>
+                                <td>{{ read.overlap_bp }} bp</td>
+                                <td>
+                                    {{ "yes" if read.has_mm else "no" }}
+                                    /
+                                    {{ "yes" if read.has_ml else "no" }}
+                                </td>
+                                <td>
+                                    {{ read.modified_calls_in_read }}
+                                </td>
+                                <td>
+                                    {{ read.hp if read.hp is not none else "—" }}
+                                </td>
+                                <td>
+                                    {{ read.ps if read.ps is not none else "—" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+            <p>
+                No alignments overlap this region.
+            </p>
+            {% endif %}
+
+            <aside class="scientific-rule">
+                The public interval is 1-based and inclusive. It was
+                converted internally to the 0-based, half-open interval
+                {{ result.fetch_start_0 }}–{{ result.fetch_stop_0 }}.
+            </aside>
+        </section>
+        {% endif %}
+        {% endif %}
+    </main>
+</body>
+</html>
