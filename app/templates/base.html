@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="MethylSV Analyst supports reproducible methylation analysis for rare disease genomic research."
+    >
+
+    <title>{% block title %}MethylSV Analyst{% endblock %}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/styles.css') }}"
+    >
+    <link
+        rel="icon"
+        href="{{ url_for('static', path='/favicon.svg') }}"
+        type="image/svg+xml"
+    >
+    <script
+        src="{{ url_for('static', path='/js/app.js') }}"
+        defer
+    ></script>
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="spectrum-bar" aria-hidden="true"></div>
+
+        <div class="container header-content">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 44 44" role="img">
+                        <path
+                            d="M11 8c0 9 22 19 22 28M33 8c0 9-22 19-22 28"
+                        />
+                        <path d="M14 14h16M12 22h20M14 30h16" />
+                    </svg>
+                </span>
+
+                <span class="brand-name">
+                    <strong>MethylSV</strong>
+                    <span>Analyst</span>
+                </span>
+            </a>
+
+            <div class="header-meta">
+                <a class="header-link" href="{{ url_for('home') }}#workflows">
+                    Workflows
+                </a>
+
+                <span class="workspace-status">
+                    <span aria-hidden="true"></span>
+                    Research workspace
+                </span>
+            </div>
+        </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div>
+                <strong>MethylSV Analyst</strong>
+                <p>Focused genomic evidence for rare disease research.</p>
+            </div>
+
+            <div class="footer-meta">
+                <span>Version 0.2.0</span>
+                <span>Research use only</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

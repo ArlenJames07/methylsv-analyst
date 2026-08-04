@@ -1,78 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MethylSV Analyst</title>
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', path='/css/styles.css') }}"
-    >
-</head>
+{% extends "base.html" %}
 
-<body>
-    <header class="site-header">
-        <div class="container header-content">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand-mark">MS</span>
-                <span>MethylSV Analyst</span>
-            </a>
+{% block body_class %}home-page{% endblock %}
 
-            <span class="version">MVP 0.2.0</span>
-        </div>
-    </header>
+{% block content %}
+<main id="main-content">
+    <section class="hero">
+        <div class="container hero-layout">
+            <div class="hero-copy">
+                <p class="eyebrow">
+                    <span aria-hidden="true"></span>
+                    Rare disease genomics
+                </p>
 
-    <main class="container">
-        <section class="intro">
-            <p class="eyebrow">Genomic analysis platform</p>
+                <h1>
+                    Research hidden patterns.
+                    <span>Make rare visible.</span>
+                </h1>
 
-            <h1>Select an analysis workflow</h1>
+                <p class="hero-text">
+                    A focused workspace for exploring regional methylation
+                    with clear validation, traceable coordinates and
+                    research-ready results.
+                </p>
 
-            <p class="intro-text">
-                Choose the workflow that corresponds to your available
-                methylation data. Each workflow validates its inputs before
-                starting an analysis.
-            </p>
-        </section>
+                <div class="hero-actions">
+                    <a class="button button-primary" href="#workflows">
+                        Explore workflows
+                        <span aria-hidden="true">↓</span>
+                    </a>
 
-        <section class="workflow-grid">
-            {% for workflow in workflows %}
-            <article class="workflow-card">
-                <div class="card-heading">
-                    <span class="module-number">{{ workflow.number }}</span>
-                    <span class="status">MVP</span>
+                    <a class="text-link" href="#integrity">
+                        View scientific safeguards
+                    </a>
                 </div>
 
-                <p class="workflow-subtitle">{{ workflow.subtitle }}</p>
-                <h2>{{ workflow.title }}</h2>
-                <p>{{ workflow.description }}</p>
-
-                <h3>Required inputs</h3>
-
-                <ul>
-                    {% for item in workflow.inputs %}
-                    <li>{{ item }}</li>
-                    {% endfor %}
+                <ul class="assurance-list" aria-label="Platform safeguards">
+                    <li>Reference-aware</li>
+                    <li>Temporary storage</li>
+                    <li>Transparent coordinates</li>
                 </ul>
+            </div>
 
-                <a
-                    class="primary-button"
-                    href="{{ url_for(
-                        'workflow_page',
-                        workflow_id=workflow.id
-                    ) }}"
-                >
-                    Open workflow
-                </a>
-            </article>
-            {% endfor %}
-        </section>
+            <div class="hero-visual" aria-hidden="true">
+                <div class="visual-glow visual-glow-one"></div>
+                <div class="visual-glow visual-glow-two"></div>
 
-        <aside class="scientific-rule">
-            <strong>Reference integrity:</strong>
-            all files in one analysis must use the same reference genome.
-            GRCh38 and T2T-CHM13 coordinates will never be mixed.
-        </aside>
-    </main>
-</body>
-</html>
+                <svg class="genome-illustration" viewBox="0 0 520 470">
+                    <defs>
+                        <linearGradient id="strand-one" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#df1995" />
+                            <stop offset="0.5" stop-color="#6d2077" />
+                            <stop offset="1" stop-color="#003b5c" />
+                        </linearGradient>
+                        <linearGradient id="strand-two" x1="1" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#00b5e2" />
+                            <stop offset="1" stop-color="#6cc24a" />
+                        </linearGradient>
+                    </defs>
+
+                    <path
+                        class="strand strand-one"
+                        d="M145 30c0 92 230 116 230 205S145 348 145 440"
+                    />
+                    <path
+                        class="strand strand-two"
+                        d="M375 30c0 92-230 116-230 205s230 113 230 205"
+                    />
+
+                    <g class="genome-rungs">
+                        <path d="M166 76h188" />
+                        <path d="M137 142h246" />
+                        <path d="M171 205h178" />
+                        <path d="M171 265h178" />
+                        <path d="M137 329h246" />
+                        <path d="M166 394h188" />
+                    </g>
+
+                    <g class="genome-nodes">
+                        <circle class="node-pink" cx="166" cy="76" r="10" />
+                        <circle class="node-cyan" cx="354" cy="76" r="10" />
+                        <circle class="node-purple" cx="137" cy="142" r="10" />
+                        <circle class="node-green" cx="383" cy="142" r="10" />
+                        <circle class="node-pink" cx="171" cy="205" r="10" />
+                        <circle class="node-cyan" cx="349" cy="205" r="10" />
+                        <circle class="node-green" cx="171" cy="265" r="10" />
+                        <circle class="node-purple" cx="349" cy="265" r="10" />
+                        <circle class="node-cyan" cx="137" cy="329" r="10" />
+                        <circle class="node-pink" cx="383" cy="329" r="10" />
+                        <circle class="node-purple" cx="166" cy="394" r="10" />
+                        <circle class="node-green" cx="354" cy="394" r="10" />
+                    </g>
+                </svg>
+
+                <div class="floating-card floating-card-top">
+                    <span class="floating-icon floating-icon-purple">✓</span>
+                    <div>
+                        <small>Input validation</small>
+                        <strong>MM / ML tag checks</strong>
+                    </div>
+                </div>
+
+                <div class="floating-card floating-card-bottom">
+                    <span class="floating-icon floating-icon-green"></span>
+                    <div>
+                        <small>Reference support</small>
+                        <strong>GRCh38 · T2T-CHM13</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflow-section" id="workflows">
+        <div class="container">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">
+                        <span aria-hidden="true"></span>
+                        Analysis workspace
+                    </p>
+                    <h2>Choose your evidence path</h2>
+                </div>
+
+                <p>
+                    Start with the workflow that matches the data you have.
+                    Every available path validates inputs before analysis.
+                </p>
+            </div>
+
+            <div class="workflow-grid">
+                {% for workflow in workflows %}
+                <article class="workflow-card workflow-card-{{ workflow.status_tone }}">
+                    <div class="card-heading">
+                        <span class="module-number">{{ workflow.number }}</span>
+                        <span class="status status-{{ workflow.status_tone }}">
+                            <span aria-hidden="true"></span>
+                            {{ workflow.status }}
+                        </span>
+                    </div>
+
+                    <div class="workflow-card-copy">
+                        <p class="workflow-subtitle">{{ workflow.subtitle }}</p>
+                        <h3>{{ workflow.title }}</h3>
+                        <p>{{ workflow.description }}</p>
+                    </div>
+
+                    <div class="workflow-requirements">
+                        <h4>Required inputs</h4>
+                        <ul class="checkmark-list">
+                            {% for item in workflow.inputs %}
+                            <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <a
+                        class="button {{ 'button-primary' if workflow.available else 'button-secondary' }}"
+                        href="{{ url_for(
+                            'workflow_page',
+                            workflow_id=workflow.id
+                        ) }}"
+                    >
+                        {{ "Open workflow" if workflow.available else "View roadmap" }}
+                        <span aria-hidden="true">→</span>
+                    </a>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="integrity-section" id="integrity">
+        <div class="container integrity-panel">
+            <div class="integrity-icon" aria-hidden="true">
+                <svg viewBox="0 0 32 32">
+                    <path d="M16 3 27 7v8c0 7-4.5 11.5-11 14C9.5 26.5 5 22 5 15V7l11-4Z" />
+                    <path d="m11 16 3 3 7-8" />
+                </svg>
+            </div>
+
+            <div>
+                <p class="eyebrow">Scientific integrity</p>
+                <h2>Coordinates stay in context.</h2>
+                <p>
+                    Every file in an analysis must use the same reference
+                    genome. GRCh38 and T2T-CHM13 coordinates are validated
+                    independently and are never mixed.
+                </p>
+            </div>
+
+            <div class="integrity-facts">
+                <div>
+                    <strong>2</strong>
+                    <span>supported references</span>
+                </div>
+                <div>
+                    <strong>1</strong>
+                    <span>reference per analysis</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

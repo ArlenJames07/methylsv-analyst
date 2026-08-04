@@ -1,66 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ workflow.title }} | MethylSV Analyst</title>
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', path='/css/styles.css') }}"
-    >
-</head>
+{% extends "base.html" %}
 
-<body>
-    <header class="site-header">
-        <div class="container header-content">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand-mark">MS</span>
-                <span>MethylSV Analyst</span>
-            </a>
+{% block title %}{{ workflow.title }} | MethylSV Analyst{% endblock %}
 
-            <span class="version">MVP 0.2.0</span>
-        </div>
-    </header>
+{% block content %}
+<main class="page-main" id="main-content">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('home') }}">Workflows</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ workflow.title }}</span>
+        </nav>
 
-    <main class="container workflow-page">
-        <a class="back-link" href="{{ url_for('home') }}">
-            ← Analysis workflows
-        </a>
+        <header class="page-heading workflow-heading">
+            <div>
+                <div class="heading-meta">
+                    <span class="module-label">Workflow {{ workflow.number }}</span>
+                    <span class="status status-{{ workflow.status_tone }}">
+                        <span aria-hidden="true"></span>
+                        {{ workflow.status }}
+                    </span>
+                </div>
 
-        <p class="eyebrow">Workflow {{ workflow.number }}</p>
-        <h1>{{ workflow.title }}</h1>
-        <p class="intro-text">{{ workflow.description }}</p>
+                <h1>{{ workflow.title }}</h1>
+                <p>{{ workflow.description }}</p>
+            </div>
+
+            <div class="workflow-heading-mark" aria-hidden="true">
+                {{ workflow.number }}
+            </div>
+        </header>
 
         <div class="workflow-details">
-            <section class="detail-panel">
-                <h2>Input requirements</h2>
+            <section class="detail-card">
+                <div class="detail-card-icon icon-purple" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3v18M5 8c3 0 3 3 7 3s4-3 7-3M5 16c3 0 3-3 7-3s4 3 7 3" />
+                    </svg>
+                </div>
 
-                <ul>
-                    {% for item in workflow.inputs %}
-                    <li>{{ item }}</li>
-                    {% endfor %}
-                </ul>
+                <div>
+                    <p class="card-kicker">Prepare</p>
+                    <h2>Input requirements</h2>
+                    <ul class="checkmark-list">
+                        {% for item in workflow.inputs %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </section>
 
-            <section class="detail-panel">
-                <h2>Analysis sequence</h2>
+            <section class="detail-card">
+                <div class="detail-card-icon icon-cyan" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M5 4h14M5 12h14M5 20h14" />
+                        <circle cx="8" cy="4" r="2" />
+                        <circle cx="16" cy="12" r="2" />
+                        <circle cx="10" cy="20" r="2" />
+                    </svg>
+                </div>
 
-                <ol>
-                    {% for step in workflow.steps %}
-                    <li>{{ step }}</li>
-                    {% endfor %}
-                </ol>
+                <div>
+                    <p class="card-kicker">Analyze</p>
+                    <h2>Analysis sequence</h2>
+                    <ol class="sequence-list">
+                        {% for step in workflow.steps %}
+                        <li>
+                            <span>{{ loop.index }}</span>
+                            <p>{{ step }}</p>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </div>
             </section>
         </div>
-        {% if workflow.id == "modbam" %}
-        <a class="primary-button" href="{{ url_for('modbam_upload_form') }}">
-            Continue to file upload
-        </a>
+
+        {% if workflow.available %}
+        <section class="action-panel action-panel-ready">
+            <div>
+                <p class="eyebrow">Ready to begin</p>
+                <h2>Start with validated input.</h2>
+                <p>
+                    Your BAM and BAI are checked before any regional analysis.
+                    Temporary files become eligible for cleanup after
+                    approximately {{ job_ttl_minutes }} minutes.
+                </p>
+            </div>
+
+            <a class="button button-primary" href="{{ url_for(workflow.route_name) }}">
+                Continue to file upload
+                <span aria-hidden="true">→</span>
+            </a>
+        </section>
+        {% else %}
+        <section class="action-panel action-panel-planned">
+            <div>
+                <p class="eyebrow">On the roadmap</p>
+                <h2>This workflow is being prepared.</h2>
+                <p>
+                    The requirements and analysis sequence are defined, but
+                    data upload and execution are not available in this release.
+                </p>
+            </div>
+
+            <a class="button button-secondary" href="{{ url_for('home') }}#workflows">
+                Return to available workflows
+            </a>
+        </section>
         {% endif %}
-        <aside class="scientific-rule">
-            The upload and validation form will be implemented in the next
-            checkpoint. No genomic data are being transferred yet.
+
+        <aside class="science-note">
+            <div class="science-note-icon" aria-hidden="true">i</div>
+            <p>
+                <strong>Reference integrity:</strong>
+                use one reference assembly throughout an analysis. Files aligned
+                to GRCh38 and T2T-CHM13 are never combined.
+            </p>
         </aside>
-    </main>
-</body>
-</html>
+    </div>
+</main>
+{% endblock %}

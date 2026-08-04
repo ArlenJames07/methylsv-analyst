@@ -1,122 +1,170 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
 
-    <title>Region selection | MethylSV Analyst</title>
+{% block title %}Region selection | MethylSV Analyst{% endblock %}
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', path='/css/styles.css') }}"
-    >
-</head>
+{% block content %}
+<main class="page-main results-page" id="main-content">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('home') }}">Workflows</a>
+            <span aria-hidden="true">/</span>
+            <a href="{{ url_for('modbam_upload_form') }}">Upload</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Region analysis</span>
+        </nav>
 
-<body>
-    <header class="site-header">
-        <div class="container header-content">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand-mark">MS</span>
-                <span>MethylSV Analyst</span>
-            </a>
-
-            <span class="version">MVP 0.2.0</span>
-        </div>
-    </header>
-
-    <main class="container workflow-page">
-        <a class="back-link" href="{{ url_for('modbam_upload_form') }}">
-            ← Upload another sample
-        </a>
+        <ol class="stepper" aria-label="Analysis progress">
+            <li class="step-complete">
+                <span aria-label="Completed">✓</span>
+                <div><small>Step 1</small><strong>Input data</strong></div>
+            </li>
+            <li class="step-complete">
+                <span aria-label="Completed">✓</span>
+                <div><small>Step 2</small><strong>Validation</strong></div>
+            </li>
+            <li
+                class="{{ 'step-complete' if result else 'step-active' }}"
+                {% if not result %}aria-current="step"{% endif %}
+            >
+                <span>{{ "✓" if result else "3" }}</span>
+                <div><small>Step 3</small><strong>Region</strong></div>
+            </li>
+            <li class="{{ 'step-active' if result else '' }}" {% if result %}aria-current="step"{% endif %}>
+                <span>4</span>
+                <div><small>Step 4</small><strong>Results</strong></div>
+            </li>
+        </ol>
 
         {% if not job_available %}
-        <section class="validation-box validation-error">
-            <h1>Analysis job unavailable</h1>
-
-            <p>
-                This temporary analysis does not exist, has expired,
-                or no longer contains its validated BAM and BAI files.
-            </p>
-
-            <a class="primary-action"
-               href="{{ url_for('modbam_upload_form') }}">
-                Upload the files again
-            </a>
+        <section class="status-banner status-banner-error" role="alert">
+            <div class="status-banner-icon" aria-hidden="true">
+                <svg viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="13" />
+                    <path d="M16 9v9M16 23h.01" />
+                </svg>
+            </div>
+            <div>
+                <p class="eyebrow">Temporary workspace</p>
+                <h1>Analysis job unavailable</h1>
+                <p>
+                    This analysis does not exist, has expired, or no longer
+                    contains its validated BAM and BAI files.
+                </p>
+                <a class="button button-primary" href="{{ url_for('modbam_upload_form') }}">
+                    Upload the files again
+                    <span aria-hidden="true">→</span>
+                </a>
+            </div>
         </section>
         {% else %}
-        <section class="detail-panel">
-            <h1>Select a genomic region</h1>
-
+        <header class="page-heading compact-heading region-heading">
+            <p class="eyebrow">
+                <span aria-hidden="true"></span>
+                Regional methylation
+            </p>
+            <h1>{{ "Analysis results" if result else "Select a genomic region" }}</h1>
             <p>
-                <strong>Reference:</strong>
-                {{ metadata.reference_label or metadata.reference }}
+                Query read-level alignments and modified-base calls with
+                explicit 1-based, inclusive coordinates.
             </p>
+        </header>
 
-            <form
-                class="region-form"
-                method="post"
-                action="{{ url_for(
-                    'analyze_modbam_region',
-                    job_id=job_id
-                ) }}"
-            >
-                <label>
-                    Chromosome or contig
+        <div class="region-input-layout">
+            <section class="form-card region-card">
+                <div class="form-card-heading">
+                    <span class="form-card-number">03</span>
+                    <div>
+                        <h2>Region coordinates</h2>
+                        <p>Intervals can span up to 1,000,000 bp.</p>
+                    </div>
+                </div>
 
-                    <select name="contig" required>
-                        {% for item in contigs %}
-                        <option
-                            value="{{ item.name }}"
-                            {% if item.name == selected_contig %}
-                            selected
-                            {% endif %}
+                <form
+                    class="region-form"
+                    method="post"
+                    action="{{ url_for(
+                        'analyze_modbam_region',
+                        job_id=job_id
+                    ) }}"
+                    data-region-form
+                >
+                    <div class="form-field region-contig">
+                        <label for="contig">Chromosome or contig</label>
+                        <div class="select-wrap">
+                            <select id="contig" name="contig" required>
+                                {% for item in contigs %}
+                                <option
+                                    value="{{ item.name }}"
+                                    {% if item.name == selected_contig %}selected{% endif %}
+                                >
+                                    {{ item.name }}
+                                    ({{ "{:,}".format(item.length) }} bp)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="start_1">Start</label>
+                        <input
+                            id="start_1"
+                            type="number"
+                            name="start_1"
+                            min="1"
+                            step="1"
+                            value="{{ start_value }}"
+                            required
                         >
-                            {{ item.name }}
-                            ({{ "{:,}".format(item.length) }} bp)
-                        </option>
-                        {% endfor %}
-                    </select>
-                </label>
+                    </div>
 
-                <label>
-                    Start
-                    <input
-                        type="number"
-                        name="start_1"
-                        min="1"
-                        step="1"
-                        value="{{ start_value }}"
-                        required
-                    >
-                </label>
+                    <div class="form-field">
+                        <label for="end_1">End</label>
+                        <input
+                            id="end_1"
+                            type="number"
+                            name="end_1"
+                            min="1"
+                            step="1"
+                            value="{{ end_value }}"
+                            required
+                        >
+                    </div>
 
-                <label>
-                    End
-                    <input
-                        type="number"
-                        name="end_1"
-                        min="1"
-                        step="1"
-                        value="{{ end_value }}"
-                        required
-                    >
-                </label>
+                    <button class="button button-primary" type="submit">
+                        Analyze region
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
 
-                <button type="submit">
-                    Retrieve overlapping reads
-                </button>
-            </form>
+                <p class="coordinate-note">
+                    Coordinates are interpreted as 1-based and inclusive.
+                </p>
+            </section>
 
-            <p class="coordinate-note">
-                Coordinates are interpreted as 1-based and inclusive.
-                The maximum interval is 1,000,000 bp.
-            </p>
-        </section>
+            <aside class="sample-context">
+                <p class="card-kicker">Validated sample</p>
+                <h2>{{ metadata.bam_original_name or "modBAM sample" }}</h2>
+                <dl>
+                    <div>
+                        <dt>Reference</dt>
+                        <dd>{{ metadata.reference_label or metadata.reference }}</dd>
+                    </div>
+                    <div>
+                        <dt>Available contigs</dt>
+                        <dd>{{ contigs|length }}</dd>
+                    </div>
+                </dl>
+                <a href="{{ url_for('modbam_upload_form') }}">Use another sample</a>
+            </aside>
+        </div>
 
         {% if errors %}
-        <section class="validation-box validation-error">
-            <h2>Region not accepted</h2>
-
+        <section class="message-card message-error" role="alert">
+            <div class="message-heading">
+                <span aria-hidden="true">!</span>
+                <h2>Region not accepted</h2>
+            </div>
             <ul>
                 {% for error in errors %}
                 <li>{{ error }}</li>
@@ -126,116 +174,242 @@
         {% endif %}
 
         {% if result %}
-        <section class="detail-panel">
-            <h2>{{ result.region_label }}</h2>
+        <section class="analysis-results" aria-labelledby="results-heading">
+            <div class="results-heading">
+                <div>
+                    <p class="eyebrow">Analysis complete</p>
+                    <h2 id="results-heading">{{ result.region_label }}</h2>
+                    <p>
+                        Results below distinguish modification calls within the
+                        selected interval from calls elsewhere on overlapping reads.
+                    </p>
+                </div>
+                <span class="result-reference">
+                    {{ metadata.reference_label or metadata.reference }}
+                </span>
+            </div>
 
             <div class="region-summary">
-                <div>
+                <div class="summary-stat stat-purple">
                     <span>Region length</span>
-                    <strong>
-                        {{ "{:,}".format(result.region_length_bp) }} bp
-                    </strong>
+                    <strong>{{ "{:,}".format(result.region_length_bp) }}</strong>
+                    <small>base pairs</small>
                 </div>
-
-                <div>
+                <div class="summary-stat stat-cyan">
                     <span>Overlapping reads</span>
-                    <strong>{{ result.read_count }}</strong>
+                    <strong>{{ "{:,}".format(result.read_count) }}</strong>
+                    <small>alignments</small>
                 </div>
+                <div class="summary-stat stat-pink">
+                    <span>Modified reads in region</span>
+                    <strong>{{ "{:,}".format(result.reads_with_modifications_in_region) }}</strong>
+                    <small>with decoded calls</small>
+                </div>
+                <div class="summary-stat stat-green">
+                    <span>Calls in region</span>
+                    <strong>{{ "{:,}".format(result.modified_calls_in_region) }}</strong>
+                    <small>modified bases</small>
+                </div>
+            </div>
 
-                <div>
-                    <span>Reads with modifications</span>
-                    <strong>{{ result.reads_with_modifications }}</strong>
-                </div>
-
-                <div>
-                    <span>Modified-base calls</span>
-                    <strong>
-                        {{ result.modified_calls_in_overlapping_reads }}
-                    </strong>
-                </div>
+            <div class="result-context">
+                <span>
+                    <strong>{{ result.modified_calls_in_overlapping_reads }}</strong>
+                    decoded calls on overlapping reads
+                </span>
+                <span>
+                    <strong>{{ result.modified_calls_outside_region_in_overlapping_reads }}</strong>
+                    calls outside the interval
+                </span>
+                <span>
+                    <strong>{{ result.modified_calls_without_reference_position }}</strong>
+                    calls without a reference position
+                </span>
             </div>
 
             {% if result.truncated %}
-            <div class="validation-box validation-warning">
-                Results reached the limit of
-                {{ "{:,}".format(result.read_limit) }} reads.
-                Counts therefore represent a partial result.
-            </div>
+            <section class="message-card message-warning" role="status">
+                <div class="message-heading">
+                    <span aria-hidden="true">i</span>
+                    <h3>Partial read set</h3>
+                </div>
+                <p>
+                    Results reached the limit of
+                    {{ "{:,}".format(result.read_limit) }} reads. Counts represent
+                    a partial result.
+                </p>
+            </section>
             {% endif %}
 
             {% if result.modification_decode_errors %}
-            <div class="validation-box validation-warning">
-                Modified-base annotations could not be decoded in
-                {{ result.modification_decode_errors }} read(s).
-            </div>
+            <section class="message-card message-warning" role="status">
+                <div class="message-heading">
+                    <span aria-hidden="true">i</span>
+                    <h3>Some annotations were skipped</h3>
+                </div>
+                <p>
+                    Modified-base annotations could not be decoded in
+                    {{ result.modification_decode_errors }} read(s).
+                </p>
+            </section>
             {% endif %}
 
-            {% if result.reads %}
-                {% if result.read_count > table_limit %}
-                <p>
-                    The table displays the first {{ table_limit }} reads.
+            <section class="table-panel" id="modification-calls">
+                <div class="panel-heading">
+                    <div>
+                        <p class="card-kicker">Decoded evidence</p>
+                        <h3>Modified-base calls</h3>
+                    </div>
+                    <span class="count-badge">
+                        {{ result.modification_calls|length }} calls
+                    </span>
+                </div>
+
+                {% if result.modification_calls %}
+                {% if result.modification_calls|length > table_limit %}
+                <p class="table-note">
+                    Displaying the first {{ table_limit }} calls in genomic order.
                 </p>
                 {% endif %}
 
-                <div class="table-scroll">
+                <div
+                    class="table-scroll"
+                    tabindex="0"
+                    role="region"
+                    aria-label="Modified-base calls table; scroll horizontally to see all columns"
+                >
                     <table class="region-table">
+                        <caption class="sr-only">
+                            Decoded modified-base calls within {{ result.region_label }}
+                        </caption>
                         <thead>
                             <tr>
-                                <th>Read</th>
-                                <th>Alignment</th>
-                                <th>Strand</th>
-                                <th>MAPQ</th>
-                                <th>Overlap</th>
-                                <th>MM/ML</th>
-                                <th>Modified calls</th>
-                                <th>HP</th>
-                                <th>PS</th>
+                                <th scope="col">Position</th>
+                                <th scope="col">Modification</th>
+                                <th scope="col">Probability</th>
+                                <th scope="col">Read</th>
+                                <th scope="col">Base</th>
+                                <th scope="col">Mod strand</th>
+                                <th scope="col">Read strand</th>
+                                <th scope="col">MAPQ</th>
+                                <th scope="col">HP</th>
+                                <th scope="col">PS</th>
                             </tr>
                         </thead>
-
                         <tbody>
-                            {% for read in result.reads[:table_limit] %}
+                            {% for call in result.modification_calls[:table_limit] %}
                             <tr>
-                                <td><code>{{ read.name }}</code></td>
+                                <td><strong>{{ "{:,}".format(call.reference_position_1) }}</strong></td>
+                                <td><span class="call-badge">{{ call.modification_name }}</span></td>
                                 <td>
-                                    {{ read.start_1 }}–{{ read.end_1 }}
+                                    {% if call.probability_midpoint is not none %}
+                                    {{ "{:.1%}".format(call.probability_midpoint) }}
+                                    {% else %}
+                                    —
+                                    {% endif %}
                                 </td>
-                                <td>{{ read.strand }}</td>
-                                <td>{{ read.mapping_quality }}</td>
-                                <td>{{ read.overlap_bp }} bp</td>
-                                <td>
-                                    {{ "yes" if read.has_mm else "no" }}
-                                    /
-                                    {{ "yes" if read.has_ml else "no" }}
-                                </td>
-                                <td>
-                                    {{ read.modified_calls_in_read }}
-                                </td>
-                                <td>
-                                    {{ read.hp if read.hp is not none else "—" }}
-                                </td>
-                                <td>
-                                    {{ read.ps if read.ps is not none else "—" }}
-                                </td>
+                                <td><code>{{ call.read_name }}</code></td>
+                                <td>{{ call.query_base }}</td>
+                                <td>{{ call.modification_strand }}</td>
+                                <td>{{ call.alignment_strand }}</td>
+                                <td>{{ call.mapping_quality }}</td>
+                                <td>{{ call.hp if call.hp is not none else "—" }}</td>
+                                <td>{{ call.ps if call.ps is not none else "—" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-            {% else %}
-            <p>
-                No alignments overlap this region.
-            </p>
-            {% endif %}
+                {% else %}
+                <div class="empty-state">
+                    <span aria-hidden="true">○</span>
+                    <p>No decoded modified-base calls fall inside this region.</p>
+                </div>
+                {% endif %}
+            </section>
 
-            <aside class="scientific-rule">
-                The public interval is 1-based and inclusive. It was
-                converted internally to the 0-based, half-open interval
-                {{ result.fetch_start_0 }}–{{ result.fetch_stop_0 }}.
+            <section class="table-panel" id="overlapping-reads">
+                <div class="panel-heading">
+                    <div>
+                        <p class="card-kicker">Alignment context</p>
+                        <h3>Overlapping reads</h3>
+                    </div>
+                    <span class="count-badge">{{ result.read_count }} reads</span>
+                </div>
+
+                {% if result.reads %}
+                {% if result.read_count > table_limit %}
+                <p class="table-note">
+                    Displaying the first {{ table_limit }} reads.
+                </p>
+                {% endif %}
+
+                <div
+                    class="table-scroll"
+                    tabindex="0"
+                    role="region"
+                    aria-label="Overlapping reads table; scroll horizontally to see all columns"
+                >
+                    <table class="region-table">
+                        <caption class="sr-only">
+                            Reads overlapping {{ result.region_label }}
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Read</th>
+                                <th scope="col">Alignment</th>
+                                <th scope="col">Strand</th>
+                                <th scope="col">MAPQ</th>
+                                <th scope="col">Overlap</th>
+                                <th scope="col">MM / ML</th>
+                                <th scope="col">Calls in region</th>
+                                <th scope="col">Calls on read</th>
+                                <th scope="col">HP</th>
+                                <th scope="col">PS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for read in result.reads[:table_limit] %}
+                            <tr>
+                                <td><code>{{ read.name }}</code></td>
+                                <td>{{ read.start_1 }}–{{ read.end_1 }}</td>
+                                <td>{{ read.strand }}</td>
+                                <td>{{ read.mapping_quality }}</td>
+                                <td>{{ read.overlap_bp }} bp</td>
+                                <td>
+                                    <span class="tag-status {{ 'tag-present' if read.has_mm and read.has_ml else 'tag-missing' }}">
+                                        {{ "yes" if read.has_mm else "no" }} /
+                                        {{ "yes" if read.has_ml else "no" }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ read.modified_calls_in_region }}</strong></td>
+                                <td>{{ read.modified_calls_in_read }}</td>
+                                <td>{{ read.hp if read.hp is not none else "—" }}</td>
+                                <td>{{ read.ps if read.ps is not none else "—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span aria-hidden="true">○</span>
+                    <p>No alignments overlap this region.</p>
+                </div>
+                {% endif %}
+            </section>
+
+            <aside class="science-note coordinate-conversion">
+                <div class="science-note-icon" aria-hidden="true">i</div>
+                <p>
+                    The public interval is 1-based and inclusive. It was
+                    converted internally to the 0-based, half-open interval
+                    <code>{{ result.fetch_start_0 }}–{{ result.fetch_stop_0 }}</code>.
+                </p>
             </aside>
         </section>
         {% endif %}
         {% endif %}
-    </main>
-</body>
-</html>
+    </div>
+</main>
+{% endblock %}

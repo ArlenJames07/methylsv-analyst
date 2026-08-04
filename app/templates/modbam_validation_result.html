@@ -1,133 +1,201 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
 
-    <title>modBAM validation | MethylSV Analyst</title>
+{% block title %}modBAM validation | MethylSV Analyst{% endblock %}
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', path='/css/styles.css') }}"
-    >
-</head>
+{% block content %}
+<main class="page-main" id="main-content">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('home') }}">Workflows</a>
+            <span aria-hidden="true">/</span>
+            <a href="{{ url_for('modbam_upload_form') }}">Upload</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Validation</span>
+        </nav>
 
-<body>
-    <header class="site-header">
-        <div class="container header-content">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand-mark">MS</span>
-                <span>MethylSV Analyst</span>
-            </a>
+        <ol class="stepper" aria-label="Analysis progress">
+            <li class="step-complete">
+                <span aria-label="Completed">✓</span>
+                <div><small>Step 1</small><strong>Input data</strong></div>
+            </li>
+            <li
+                class="{{ 'step-complete' if accepted else 'step-active' }}"
+                {% if not accepted %}aria-current="step"{% endif %}
+            >
+                <span>{{ "✓" if accepted else "2" }}</span>
+                <div><small>Step 2</small><strong>Validation</strong></div>
+            </li>
+            <li
+                class="{{ 'step-active' if accepted else '' }}"
+                {% if accepted %}aria-current="step"{% endif %}
+            >
+                <span>3</span>
+                <div><small>Step 3</small><strong>Region</strong></div>
+            </li>
+            <li>
+                <span>4</span>
+                <div><small>Step 4</small><strong>Results</strong></div>
+            </li>
+        </ol>
 
-            <span class="version">MVP 0.2.0</span>
-        </div>
-    </header>
-
-    <main class="container workflow-page">
-        <a class="back-link" href="{{ url_for('modbam_upload_form') }}">
-            ← Upload another sample
-        </a>
-
-        {% if accepted %}
-        <section class="validation-box validation-success">
-            <h1>modBAM accepted</h1>
-
-            <p>
-                The uploaded BAM, index, reference fingerprint and
-                modified-base annotations passed validation.
-            </p>
-        </section>
-        {% else %}
-        <section class="validation-box validation-error">
-            <h1>modBAM rejected</h1>
-
-            <ul>
-                {% for error in errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        </section>
-        {% endif %}
-
-        {% if checks %}
-        <section class="detail-panel result-details">
-            <h2>Validation checks</h2>
-
-            <ul class="check-list">
-                {% for check in checks %}
-                <li>
-                    <strong>{{ check.name }}</strong>
-                    <span>{{ check.detail }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </section>
-        {% endif %}
-
-        {% if warnings %}
-        <section class="validation-box validation-warning">
-            <h2>Warnings</h2>
-
-            <ul>
-                {% for warning in warnings %}
-                <li>{{ warning }}</li>
-                {% endfor %}
-            </ul>
-        </section>
-        {% endif %}
-
-        <section class="detail-panel result-details">
-            <h2>Upload summary</h2>
-
-            <p>
-                <strong>Selected reference:</strong>
-                {{ reference }}
-            </p>
-
-            {% for file in files %}
-            <p>
-                <strong>{{ file.name }}</strong><br>
-                {{ file.size }}
-            </p>
-            {% endfor %}
-
-            {% if accepted and job_id %}
-            <div class="job-information">
-                <p>
-                    <strong>Temporary analysis ID:</strong><br>
-                    <code class="job-id">{{ job_id }}</code>
-                </p>
-
-                <p>
-                    The validated files will be available for approximately
-                    {{ job_ttl_minutes }} minutes.
-                </p>
+        <section
+            class="status-banner {{ 'status-banner-success' if accepted else 'status-banner-error' }}"
+            role="{{ 'status' if accepted else 'alert' }}"
+        >
+            <div class="status-banner-icon" aria-hidden="true">
+                {% if accepted %}
+                <svg viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="13" />
+                    <path d="m10 16 4 4 8-9" />
+                </svg>
+                {% else %}
+                <svg viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="13" />
+                    <path d="M16 9v9M16 23h.01" />
+                </svg>
+                {% endif %}
             </div>
 
-            <a
-                class="primary-action"
-                href="{{ url_for(
-                    'modbam_region_form',
-                    job_id=job_id
-                ) }}"
-            >
-                Continue to region selection →
-            </a>
-            {% endif %}
+            <div>
+                <p class="eyebrow">Input validation</p>
+                <h1>modBAM {{ "accepted" if accepted else "not accepted" }}</h1>
+
+                {% if accepted %}
+                <p>
+                    The BAM, index, reference fingerprint and modified-base
+                    annotations passed validation. You can now choose a region.
+                </p>
+                {% else %}
+                <p>
+                    The uploaded files did not pass validation. Review the
+                    issues below, then return to upload corrected files.
+                </p>
+                {% endif %}
+            </div>
         </section>
 
-        <aside class="scientific-rule">
-            {% if accepted and job_id %}
-            The validated files are temporarily retained under an isolated
-            analysis identifier. They become eligible for automatic cleanup
-            after {{ job_ttl_minutes }} minutes. Use only synthetic or properly
-            deidentified data during development.
-            {% else %}
-            The rejected upload was closed and no temporary analysis job
-            was retained.
-            {% endif %}
+        <div class="results-layout">
+            <div class="results-main">
+                {% if errors %}
+                <section class="message-card message-error" role="alert">
+                    <div class="message-heading">
+                        <span aria-hidden="true">!</span>
+                        <h2>Issues to resolve</h2>
+                    </div>
+                    <ul>
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+
+                {% if checks %}
+                <section class="detail-panel result-details">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="card-kicker">Quality control</p>
+                            <h2>Validation checks</h2>
+                        </div>
+                        <span class="count-badge">{{ checks|length }} passed</span>
+                    </div>
+
+                    <ul class="check-list">
+                        {% for check in checks %}
+                        <li>
+                            <span class="check-icon" aria-hidden="true">✓</span>
+                            <div>
+                                <strong>{{ check.name }}</strong>
+                                <span>{{ check.detail }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+
+                {% if warnings %}
+                <section class="message-card message-warning" role="status">
+                    <div class="message-heading">
+                        <span aria-hidden="true">i</span>
+                        <h2>Warnings</h2>
+                    </div>
+                    <ul>
+                        {% for warning in warnings %}
+                        <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+            </div>
+
+            <aside class="result-summary">
+                <section class="summary-card">
+                    <p class="card-kicker">Upload summary</p>
+                    <h2>Input snapshot</h2>
+
+                    <dl class="summary-list">
+                        <div>
+                            <dt>Reference</dt>
+                            <dd>{{ reference }}</dd>
+                        </div>
+
+                        {% for file in files %}
+                        <div>
+                            <dt>{{ "Alignment" if loop.first else "Index" }}</dt>
+                            <dd>
+                                <strong>{{ file.name }}</strong>
+                                <span>{{ file.size }}</span>
+                            </dd>
+                        </div>
+                        {% endfor %}
+                    </dl>
+
+                    {% if accepted and job_id %}
+                    <div class="job-information">
+                        <p>Temporary analysis ID</p>
+                        <code class="job-id">{{ job_id }}</code>
+                        <small>
+                            Available for approximately
+                            {{ job_ttl_minutes }} minutes.
+                        </small>
+                    </div>
+
+                    <a
+                        class="button button-primary button-full"
+                        href="{{ url_for(
+                            'modbam_region_form',
+                            job_id=job_id
+                        ) }}"
+                    >
+                        Select a region
+                        <span aria-hidden="true">→</span>
+                    </a>
+                    {% else %}
+                    <a
+                        class="button button-secondary button-full"
+                        href="{{ url_for('modbam_upload_form') }}"
+                    >
+                        Return to upload
+                    </a>
+                    {% endif %}
+                </section>
+            </aside>
+        </div>
+
+        <aside class="science-note">
+            <div class="science-note-icon" aria-hidden="true">i</div>
+            <p>
+                {% if accepted and job_id %}
+                Validated files are retained only in the temporary workspace
+                identified above and become eligible for automatic cleanup after
+                {{ job_ttl_minutes }} minutes.
+                {% else %}
+                The rejected upload was closed and no temporary analysis job was
+                retained.
+                {% endif %}
+            </p>
         </aside>
-    </main>
-</body>
-</html>
+    </div>
+</main>
+{% endblock %}
