@@ -203,11 +203,17 @@ def validate_modbam(
                     f"{records_scanned:,} records."
                 )
             else:
+                record_label = (
+                    "record"
+                    if valid_modified_records == 1
+                    else "records"
+                )
+
                 checks.append(
                     {
                         "name": "Modified-base tags",
                         "detail": (
-                            f"{valid_modified_records:,} records with "
+                            f"{valid_modified_records:,} {record_label} with "
                             f"parsable MM/ML tags and "
                             f"{modified_base_calls:,} modified-base calls "
                             f"were detected."

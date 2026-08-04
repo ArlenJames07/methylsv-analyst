@@ -117,11 +117,17 @@ def decode_read_modification_calls(
 
     try:
         modified_bases = read.modified_bases
-    except (KeyError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError) as exc:
         raise ModificationCallDecodeError(
             f"Could not decode MM/ML tags for "
             f"read '{read.query_name}'."
         ) from exc
+
+    if modified_bases is None:
+        raise ModificationCallDecodeError(
+            f"Could not decode MM/ML tags for "
+            f"read '{read.query_name}'."
+        )
 
     if not modified_bases:
         return result
