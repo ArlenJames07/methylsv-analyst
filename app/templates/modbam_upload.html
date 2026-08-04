@@ -1,100 +1,191 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
 
-    <title>Upload modBAM | MethylSV Analyst</title>
+{% block title %}Upload modBAM | MethylSV Analyst{% endblock %}
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', path='/css/styles.css') }}"
-    >
-</head>
-
-<body>
-    <header class="site-header">
-        <div class="container header-content">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand-mark">MS</span>
-                <span>MethylSV Analyst</span>
+{% block content %}
+<main class="page-main" id="main-content">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('home') }}">Workflows</a>
+            <span aria-hidden="true">/</span>
+            <a href="{{ url_for('workflow_page', workflow_id='modbam') }}">
+                Methylation visualization
             </a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Upload</span>
+        </nav>
 
-            <span class="version">MVP 0.2.0</span>
+        <ol class="stepper" aria-label="Analysis progress">
+            <li class="step-active" aria-current="step">
+                <span>1</span>
+                <div><small>Step 1</small><strong>Input data</strong></div>
+            </li>
+            <li>
+                <span>2</span>
+                <div><small>Step 2</small><strong>Validation</strong></div>
+            </li>
+            <li>
+                <span>3</span>
+                <div><small>Step 3</small><strong>Region</strong></div>
+            </li>
+            <li>
+                <span>4</span>
+                <div><small>Step 4</small><strong>Results</strong></div>
+            </li>
+        </ol>
+
+        <header class="page-heading compact-heading">
+            <p class="eyebrow">
+                <span aria-hidden="true"></span>
+                Single-sample analysis
+            </p>
+            <h1>Upload one modBAM sample</h1>
+            <p>
+                Add a coordinate-sorted BAM, its matching BAI index and the
+                reference genome used during alignment.
+            </p>
+        </header>
+
+        <div class="form-layout">
+            <form
+                class="form-card upload-form"
+                action="{{ url_for('validate_modbam_upload') }}"
+                method="post"
+                enctype="multipart/form-data"
+                data-upload-form
+            >
+                <div class="form-card-heading">
+                    <span class="form-card-number">01</span>
+                    <div>
+                        <h2>Sample files</h2>
+                        <p>All three fields are required.</p>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label for="reference">Reference genome</label>
+                    <div class="select-wrap">
+                        <select
+                            id="reference"
+                            name="reference"
+                            required
+                            aria-describedby="reference-help"
+                        >
+                            <option value="">Select a reference</option>
+
+                            {% for value, label in reference_options.items() %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <small id="reference-help">
+                        Choose the assembly used to align this sample.
+                    </small>
+                </div>
+
+                <div class="form-field">
+                    <label for="bam_files">modBAM file</label>
+                    <div class="file-control">
+                        <div class="file-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 3h7l4 4v14H7z" />
+                                <path d="M14 3v5h5M9.5 13h5M9.5 17h5" />
+                            </svg>
+                        </div>
+                        <div class="file-copy">
+                            <strong data-file-label>Choose a .bam file</strong>
+                            <small>Coordinate-sorted with MM and ML tags</small>
+                        </div>
+                        <span class="file-button">Browse</span>
+                        <input
+                            id="bam_files"
+                            name="bam_files"
+                            type="file"
+                            accept=".bam"
+                            required
+                            aria-describedby="bam-help"
+                            data-file-input
+                        >
+                    </div>
+                    <small class="sr-only" id="bam-help">
+                        Exactly one BAM file containing MM and ML tags.
+                    </small>
+                </div>
+
+                <div class="form-field">
+                    <label for="bai_files">BAM index</label>
+                    <div class="file-control">
+                        <div class="file-icon file-icon-cyan" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 3h7l4 4v14H7z" />
+                                <path d="M14 3v5h5M10 13h4M10 17h4" />
+                            </svg>
+                        </div>
+                        <div class="file-copy">
+                            <strong data-file-label>Choose a .bai file</strong>
+                            <small>Index matching the uploaded modBAM</small>
+                        </div>
+                        <span class="file-button">Browse</span>
+                        <input
+                            id="bai_files"
+                            name="bai_files"
+                            type="file"
+                            accept=".bai"
+                            required
+                            aria-describedby="bai-help"
+                            data-file-input
+                        >
+                    </div>
+                    <small class="sr-only" id="bai-help">
+                        The index must correspond to the uploaded BAM.
+                    </small>
+                </div>
+
+                <div class="form-actions">
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                        data-submit-button
+                    >
+                        <span data-submit-text>Validate and continue</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                    <p>No analysis starts until validation passes.</p>
+                </div>
+            </form>
+
+            <aside class="form-sidebar">
+                <section class="sidebar-card">
+                    <div class="sidebar-card-icon icon-green" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 3 20 6v6c0 5-3 8-8 10-5-2-8-5-8-10V6z" />
+                            <path d="m8 12 2.5 2.5L16 9" />
+                        </svg>
+                    </div>
+                    <h2>Before you upload</h2>
+                    <ul class="plain-check-list">
+                        <li>BAM is coordinate-sorted</li>
+                        <li>BAI was generated from this BAM</li>
+                        <li>MM and ML tags are present</li>
+                        <li>Reference selection is exact</li>
+                    </ul>
+                </section>
+
+                <section class="sidebar-card sidebar-card-tinted">
+                    <p class="card-kicker">Data handling</p>
+                    <h2>Temporary by design</h2>
+                    <p>
+                        Validated files are isolated under a temporary analysis
+                        ID and become eligible for cleanup after approximately
+                        {{ job_ttl_minutes }} minutes.
+                    </p>
+                    <p class="privacy-note">
+                        Use synthetic or properly deidentified data in this
+                        development environment.
+                    </p>
+                </section>
+            </aside>
         </div>
-    </header>
-
-    <main class="container workflow-page">
-        <a
-            class="back-link"
-            href="{{ url_for('workflow_page', workflow_id='modbam') }}"
-        >
-            ← Methylation visualization
-        </a>
-
-        <p class="eyebrow">Step 1 of 4 · Input data</p>
-        <h1>Upload one modBAM sample</h1>
-
-        <p class="intro-text">
-            Select one coordinate-sorted BAM, its matching BAI index
-            and the reference genome used during alignment.
-        </p>
-
-        <form
-            class="upload-panel"
-            action="{{ url_for('validate_modbam_upload') }}"
-            method="post"
-            enctype="multipart/form-data"
-        >
-            <div class="form-field">
-                <label for="reference">Reference genome</label>
-
-                <select id="reference" name="reference" required>
-                    <option value="">Select a reference</option>
-
-                    {% for value, label in reference_options.items() %}
-                    <option value="{{ value }}">{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-field">
-                <label for="bam_files">modBAM file</label>
-
-                <input
-                    id="bam_files"
-                    name="bam_files"
-                    type="file"
-                    accept=".bam"
-                    required
-                >
-
-                <small>Exactly one `.bam` file containing MM and ML tags.</small>
-            </div>
-
-            <div class="form-field">
-                <label for="bai_files">BAM index</label>
-
-                <input
-                    id="bai_files"
-                    name="bai_files"
-                    type="file"
-                    accept=".bai"
-                    required
-                >
-
-                <small>The index must correspond to the uploaded BAM.</small>
-            </div>
-
-            <button class="primary-button" type="submit">
-                Validate upload
-            </button>
-        </form>
-
-        <aside class="scientific-rule">
-            Use only a small, synthetic or desidentified BAM during development.
-            Large-file limits and persistent storage have not been configured yet.
-        </aside>
-    </main>
-</body>
-</html>
+    </div>
+</main>
+{% endblock %}

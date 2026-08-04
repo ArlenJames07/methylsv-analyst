@@ -1,6 +1,12 @@
 from pathlib import Path
+from typing import cast
 
 import pysam
+
+from app.services.modification_calls import (
+    ModificationCallDecodeError,
+    decode_read_modification_calls,
+)
 
 
 MAX_REGION_BP = 1_000_000
@@ -61,7 +67,7 @@ def read_region(
     end_1: int,
 ) -> dict[str, object]:
     """
-    Retrieve reads overlapping a genomic interval.
+    Retrieve reads and modified-base calls overlapping an interval.
 
     Public coordinates:
         1-based and inclusive.
@@ -139,9 +145,15 @@ def read_region(
         stop_0 = end_1
 
         reads: list[dict[str, object]] = []
+        modification_calls: list[dict[str, object]] = []
+
         truncated = False
         reads_with_modifications = 0
+        reads_with_modifications_in_region = 0
         modified_calls_in_overlapping_reads = 0
+        modified_calls_in_region = 0
+        modified_calls_outside_region = 0
+        modified_calls_without_reference_position = 0
         modification_decode_errors = 0
 
         iterator = bam.fetch(
@@ -157,29 +169,71 @@ def read_region(
 
             has_mm = read.has_tag("MM")
             has_ml = read.has_tag("ML")
-
-            try:
-                modified_bases = read.modified_bases
-            except (KeyError, ValueError):
-                modified_bases = None
-                modification_decode_errors += 1
+            modification_decode_error = False
 
             modification_count = 0
+            regional_modification_count = 0
+            regional_calls: list[dict[str, object]] = []
 
-            if modified_bases:
-                modification_count = sum(
-                    len(calls)
-                    for calls in modified_bases.values()
+            try:
+                decoded = decode_read_modification_calls(
+                    read=read,
+                    region_start_0=start_0,
+                    region_stop_0=stop_0,
                 )
+            except ModificationCallDecodeError:
+                modification_decode_error = True
+                modification_decode_errors += 1
+            else:
+                modification_count = cast(
+                    int,
+                    decoded["decoded_call_count"],
+                )
+                regional_modification_count = cast(
+                    int,
+                    decoded["calls_in_region"],
+                )
+
+                modified_calls_outside_region += cast(
+                    int,
+                    decoded["calls_outside_region"],
+                )
+                modified_calls_without_reference_position += cast(
+                    int,
+                    decoded[
+                        "calls_without_reference_position"
+                    ],
+                )
+
+                regional_calls = cast(
+                    list[dict[str, object]],
+                    decoded["calls"],
+                )
+                modification_calls.extend(regional_calls)
 
             if modification_count > 0:
                 reads_with_modifications += 1
-                modified_calls_in_overlapping_reads += (
-                    modification_count
-                )
 
-            hp = read.get_tag("HP") if read.has_tag("HP") else None
-            ps = read.get_tag("PS") if read.has_tag("PS") else None
+            if regional_modification_count > 0:
+                reads_with_modifications_in_region += 1
+
+            modified_calls_in_overlapping_reads += (
+                modification_count
+            )
+            modified_calls_in_region += (
+                regional_modification_count
+            )
+
+            hp = (
+                read.get_tag("HP")
+                if read.has_tag("HP")
+                else None
+            )
+            ps = (
+                read.get_tag("PS")
+                if read.has_tag("PS")
+                else None
+            )
 
             read_start_1 = (
                 None
@@ -187,6 +241,8 @@ def read_region(
                 else read.reference_start + 1
             )
 
+            # reference_end is 0-based exclusive, but its numeric
+            # value is also the 1-based inclusive alignment end.
             read_end_1 = read.reference_end
 
             reads.append(
@@ -203,12 +259,39 @@ def read_region(
                     "has_mm": has_mm,
                     "has_ml": has_ml,
                     "modified_calls_in_read": modification_count,
+                    "modified_calls_in_region": (
+                        regional_modification_count
+                    ),
+                    "modification_decode_error": (
+                        modification_decode_error
+                    ),
                     "hp": hp,
                     "ps": ps,
                     "is_secondary": read.is_secondary,
-                    "is_supplementary": read.is_supplementary,
+                    "is_supplementary": (
+                        read.is_supplementary
+                    ),
                 }
             )
+
+    modification_calls.sort(
+        key=lambda call: (
+            int(
+                cast(
+                    int,
+                    call["reference_position_1"],
+                )
+            ),
+            str(call["read_name"]),
+            int(
+                cast(
+                    int,
+                    call["query_position_bam_0"],
+                )
+            ),
+            str(call["modification_code"]),
+        )
+    )
 
     return {
         "region_label": f"{contig}:{start_1}-{end_1}",
@@ -221,13 +304,24 @@ def read_region(
         "fetch_stop_0": stop_0,
         "read_count": len(reads),
         "reads_with_modifications": reads_with_modifications,
+        "reads_with_modifications_in_region": (
+            reads_with_modifications_in_region
+        ),
         "modified_calls_in_overlapping_reads": (
             modified_calls_in_overlapping_reads
+        ),
+        "modified_calls_in_region": modified_calls_in_region,
+        "modified_calls_outside_region_in_overlapping_reads": (
+            modified_calls_outside_region
+        ),
+        "modified_calls_without_reference_position": (
+            modified_calls_without_reference_position
         ),
         "modification_decode_errors": (
             modification_decode_errors
         ),
         "truncated": truncated,
         "read_limit": MAX_READS,
+        "modification_calls": modification_calls,
         "reads": reads,
     }

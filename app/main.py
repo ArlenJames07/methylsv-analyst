@@ -4,14 +4,16 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from app.routes.modbam import router as modbam_router
+from app.services.job_store import JOB_TTL_SECONDS
 
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="MethylSV Analyst",
-    description="Platform for methylation and structural variant analysis",
+    description="Platform for regional methylation analysis",
     version="0.2.0",
 )
 
@@ -30,29 +32,34 @@ WORKFLOWS = {
     "modbam": {
         "id": "modbam",
         "number": "01",
+        "status": "Available now",
+        "status_tone": "ready",
+        "available": True,
+        "route_name": "modbam_upload_form",
         "title": "Methylation visualization",
         "subtitle": "Single-sample modBAM analysis",
         "description": (
-            "Inspect DNA methylation at read level and generate regional "
-            "plots using modbamtools."
+            "Inspect DNA methylation at read and modified-call level "
+            "across a validated genomic region."
         ),
         "inputs": [
             "Exactly one coordinate-sorted modBAM file",
             "Matching BAM index: .bai",
             "Reference: GRCh38/hg38 or T2T-CHM13v2.0",
-            "Optional indexed VCF for haplotagging",
         ],
         "steps": [
             "Validate the BAM, index, reference and MM/ML tags",
-            "Optionally haplotag the BAM with HiPhase",
-            "Select a genomic region",
-            "Generate read-level methylation visualization",
-            "Download plots, logs and the reproducibility manifest",
+            "Select a genomic interval using 1-based coordinates",
+            "Retrieve the reads that overlap the interval",
+            "Review per-read and decoded modified-base calls",
         ],
     },
     "dss": {
         "id": "dss",
         "number": "02",
+        "status": "Planned",
+        "status_tone": "planned",
+        "available": False,
         "title": "Differential methylation",
         "subtitle": "Two-group DSS analysis",
         "description": (
@@ -99,7 +106,10 @@ def workflow_page(request: Request, workflow_id: str):
     return templates.TemplateResponse(
         request=request,
         name="workflow.html",
-        context={"workflow": workflow},
+        context={
+            "workflow": workflow,
+            "job_ttl_minutes": JOB_TTL_SECONDS // 60,
+        },
     )
 
 

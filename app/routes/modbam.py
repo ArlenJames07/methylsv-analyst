@@ -12,17 +12,10 @@ from app.services.job_store import (
     JOB_TTL_SECONDS,
     create_job,
     delete_job,
-    write_job_metadata,
-)
-from app.services.modbam_validator import validate_modbam
-
-from app.services.job_store import (
-    JOB_TTL_SECONDS,
-    create_job,
-    delete_job,
     load_job,
     write_job_metadata,
 )
+from app.services.modbam_validator import validate_modbam
 from app.services.region_reader import (
     RegionValidationError,
     list_contigs,
@@ -89,7 +82,10 @@ def upload_form(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="modbam_upload.html",
-        context={"reference_options": REFERENCE_OPTIONS},
+        context={
+            "reference_options": REFERENCE_OPTIONS,
+            "job_ttl_minutes": JOB_TTL_SECONDS // 60,
+        },
     )
 
 
@@ -477,4 +473,4 @@ async def analyze_region(
             "table_limit": REGION_TABLE_LIMIT,
         },
         status_code=400 if errors else 200,
-    )            
+    )
